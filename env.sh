@@ -141,16 +141,24 @@ export DASHBOARD_API_HOSTNAME=dashboard-api
 export DASHBOARD_API_CONTAINER_PORT=8750
 export INTERVAL=5000
 
+# FORM
+export FORM_ISS=https://fhir-myrecord.sandboxcerner.com/dstu2/0b8a0111-e8e6-4c26-a91c-5069cbc6b1ca
+export FORM_SCOPES='''patient/Condition.read patient/DiagnosticReport.read patient/DocumentReference.read patient/MedicationAdministration.read patient/MedicationOrder.read patient/MedicationStatement.read patient/Observation.read patient/Patient.read patient/Procedure.read launch/patient profile openid online_access'''
+export FORM_CLIENT_ID=171acbe3-1c80-47bb-b1bb-cc1fc0d20314
+export FORM_CONTAINER_PORT=3000
+export FORM_SUBDOMAIN=form
+
 # NLPAAS
 export NLPAAS_HOSTNAME=nlpaas
 export NLPAAS_CONTAINER_PORT=5000
-export NLPAAS_CUSTOM_S3_URL=s3_url
-export NLPAAS_CUSTOM_DIR=dir
+export NLPAAS_SUBDOMAIN=paas
+export NLPAAS_CUSTOM_S3_URL=https://cibmtr-form-content.s3.amazonaws.com/CIBMTR_knowledge_base.zip
+export NLPAAS_CUSTOM_DIR=CIBMTR_knowledge_base
 
 # CQL / FHIR
 export FHIR_CQL_EVAL_URL=https://gt-apps.hdap.gatech.edu/cql/evaluate
 export FHIR_DATA_SERVICE_URI=https://apps.hdap.gatech.edu/gt-fhir/fhir/
 export FHIR_TERMINOLOGY_SERVICE_URI=https://cts.nlm.nih.gov/fhir/
 export FHIR_TERMINOLOGY_SERVICE_ENDPOINT="Terminology Service Endpoint"
-export FHIR_TERMINOLOGY_USER_NAME=username
-export FHIR_TERMINOLOGY_USER_PASSWORD=password
+export FHIR_TERMINOLOGY_USER_NAME=jduke99
+export FHIR_TERMINOLOGY_USER_PASSWORD=v6R4*SsU39
