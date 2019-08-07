@@ -152,13 +152,13 @@ export FORM_SUBDOMAIN=form
 export NLPAAS_HOSTNAME=nlpaas
 export NLPAAS_CONTAINER_PORT=5000
 export NLPAAS_SUBDOMAIN=paas
-export NLPAAS_CUSTOM_S3_URL=https://cibmtr-form-content.s3.amazonaws.com/CIBMTR_knowledge_base.zip
-export NLPAAS_CUSTOM_DIR=CIBMTR_knowledge_base
+export NLPAAS_CUSTOM_S3_URL=custom_s3_url
+export NLPAAS_CUSTOM_DIR=custom_dir
 
 # CQL / FHIR
 export FHIR_CQL_EVAL_URL=https://gt-apps.hdap.gatech.edu/cql/evaluate
 export FHIR_DATA_SERVICE_URI=https://apps.hdap.gatech.edu/gt-fhir/fhir/
 export FHIR_TERMINOLOGY_SERVICE_URI=https://cts.nlm.nih.gov/fhir/
 export FHIR_TERMINOLOGY_SERVICE_ENDPOINT="Terminology Service Endpoint"
-export FHIR_TERMINOLOGY_USER_NAME=jduke99
-export FHIR_TERMINOLOGY_USER_PASSWORD=v6R4*SsU39
+export FHIR_TERMINOLOGY_USER_NAME=username
+export FHIR_TERMINOLOGY_USER_PASSWORD=password
