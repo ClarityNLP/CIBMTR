@@ -38,7 +38,7 @@ services:
   identity-provider:
     container_name: IDENTITY_PROVIDER
     hostname: identity-provider
-    build: claritynlp/identity-provider
+    image: claritynlp/identity-provider
     expose:
       - ${IDENTITY_PROVIDER_CONTAINER_PORT}
     volumes:
@@ -77,7 +77,7 @@ services:
   identity-and-access-proxy:
     container_name: IDENTITY_AND_ACCESS_PROXY
     hostname: identity-and-access-proxy
-    build: claritynlp/identity-and-access-proxy
+    image: claritynlp/identity-and-access-proxy
     expose:
       - ${IDENTITY_AND_ACCESS_PROXY_CONTAINER_PORT}
     entrypoint: pm2-runtime
@@ -96,7 +96,7 @@ services:
   nlp-api:
     container_name: NLP_API
     hostname: ${NLP_API_HOSTNAME}
-    build: claritynlp/nlp-api
+    image: claritynlp/nlp-api
     expose:
       - ${NLP_API_CONTAINER_PORT}
     entrypoint:
@@ -179,7 +179,7 @@ services:
   nlp-solr:
     container_name: NLP_SOLR
     hostname: ${NLP_SOLR_HOSTNAME}
-    build: claritynlp/nlp-solr
+    image: claritynlp/nlp-solr
     expose:
       - ${NLP_SOLR_CONTAINER_PORT}
     volumes:
@@ -194,7 +194,7 @@ services:
   nlp-mongo:
     container_name: NLP_MONGO
     hostname: ${NLP_MONGO_HOSTNAME}
-    build: claritynlp/nlp-mongo
+    image: claritynlp/nlp-mongo
     environment:
       - MONGO_DATA_DIR=/data/db
       - MONGO_LOG_DIR=/dev/null
@@ -211,7 +211,7 @@ services:
   nlp-postgres:
     container_name: NLP_POSTGRES
     hostname: ${NLP_PG_HOSTNAME}
-    build: claritynlp/nlp-postgres
+    image: claritynlp/nlp-postgres
     command: postgres -c 'shared_buffers=512MB' -c 'max_connections=500'
     environment:
       POSTGRES_USER: ${NLP_PG_USER}
@@ -227,7 +227,7 @@ services:
   ingest-api:
     container_name: INGEST_API
     hostname: ${INGEST_API_HOSTNAME}
-    build: claritynlp/ingest-api
+    image: claritynlp/ingest-api
     volumes:
       - /app/node_modules/ #empties container node_modules, forces bcrypt to be built on container
       - ingest-files:/var/lib/ingest-files
@@ -277,7 +277,7 @@ services:
   ingest-mongo:
     container_name: ${INGEST_MONGO_CONTAINER_NAME}
     hostname: ${INGEST_MONGO_HOSTNAME}
-    build: claritynlp/ingest-mongo
+    image: claritynlp/ingest-mongo
     environment:
       - MONGO_DATA_DIR=/data/db
       - MONGO_LOG_DIR=/dev/null
@@ -294,7 +294,7 @@ services:
   ingest-client:
     container_name: INGEST_CLIENT
     hostname: ${INGEST_CLIENT_HOSTNAME}
-    build: claritynlp/ingest-client
+    image: claritynlp/ingest-client
     environment:
       - PORT=${INGEST_CLIENT_CONTAINER_PORT}
       - VIRTUAL_HOST=${INGEST_CLIENT_SUBDOMAIN}.${DOMAIN}
@@ -322,7 +322,7 @@ services:
   results-client:
     container_name: RESULTS_CLIENT
     hostname: ${RESULTS_CLIENT_HOSTNAME}
-    build: claritynlp/results-client
+    image: claritynlp/results-client
     volumes:
       - /app/node_modules
     environment:
@@ -340,7 +340,7 @@ services:
   dashboard-client:
     container_name: DASHBOARD_CLIENT
     hostname: ${DASHBOARD_CLIENT_HOSTNAME}
-    build: claritynlp/dashboard-client
+    image: claritynlp/dashboard-client
     volumes:
       - /app/node_modules
     environment:
@@ -355,13 +355,32 @@ services:
     networks:
       - cibmtr
 
+  form:
+    container_name: FORM
+    hostname: form
+    image: claritynlp/cibmtr-form
+    volumes:
+      - /app/node_modules
+    environment:
+      - PORT=${FORM_CONTAINER_PORT}
+      - VIRTUAL_HOST=${FORM_SUBDOMAIN}.${DOMAIN}
+      - VIRTUAL_PORT=80
+      - REACT_APP_CLARITY_NLPAAS_URL=https://${NLPAAS_SUBDOMAIN}.${DOMAIN}/job/${NLPAAS_CUSTOM_DIR}/4100r4/
+      - REACT_APP_ISS=${FORM_ISS}
+      - REACT_APP_SCOPES=${FORM_SCOPES}
+      - REACT_APP_CLIENT_ID=${FORM_CLIENT_ID}
+    networks:
+      - cibmtr
+
   nlpaas:
     container_name: NLPAAS
     hostname: ${NLPAAS_HOSTNAME}
-    build: claritynlp/nlpaas
+    image: claritynlp/nlpaas
     expose:
       - ${NLPAAS_CONTAINER_PORT}
     environment:
+      - VIRTUAL_HOST=${NLPAAS_SUBDOMAIN}.${DOMAIN}
+      - VIRTUAL_PORT=${NLPAAS_CONTAINER_PORT}
       - CUSTOM_S3_URL=${NLPAAS_CUSTOM_S3_URL}
       - CUSTOM_DIR=${NLPAAS_CUSTOM_DIR}
       - NLP_SOLR_URL=http://identity-and-access-proxy:${IDENTITY_AND_ACCESS_PROXY_CONTAINER_PORT}/solr/sample
@@ -376,7 +395,7 @@ services:
   cql-execution:
     container_name: CQL_EXECUTION
     hostname: cql-execution
-    build: claritynlp/cqlexecutionservice
+    image: claritynlp/cqlexecutionservice:dstu2
     networks:
       - cibmtr
     depends_on:
@@ -398,7 +417,7 @@ services:
   nginx-proxy:
     container_name: NGINX_PROXY
     hostname: nginx-proxy
-    build: claritynlp/nginx-proxy
+    image: claritynlp/nginx-proxy
     ports:
       - "80:80"
       - "443:443"
