@@ -33,13 +33,13 @@ endif
 endif
 
 start-clarity:
-		docker-compose up --build
+		docker-compose up
 
 stop-clarity:
 		docker-compose down --remove-orphans
 
 start-clarity-local:
-		docker-compose -f docker-compose.local.yml up --build
+		docker-compose -f docker-compose.local.yml up
 
 stop-clarity-local:
 		docker-compose -f docker-compose.local.yml down --remove-orphans
