@@ -83,6 +83,7 @@ export NLP_PG_CONTAINER_PORT=5432
 export NLP_PG_USER=pg
 export NLP_PG_PASSWORD=pg
 export NLP_PG_DATABASE=clarity
+export INIT_OMOP=false
 
 # INGEST API
 export INGEST_API_HOSTNAME=ingest-api
