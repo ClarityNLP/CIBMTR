@@ -4,7 +4,7 @@ env.mk: env.sh
 	sed 's/"//g ; s/=/:=/' < $< > $@
 
 start-clarity:
-		docker-compose up
+		docker-compose pull && docker-compose up -d
 
 stop-clarity:
 		docker-compose down --remove-orphans
