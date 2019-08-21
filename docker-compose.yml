@@ -394,7 +394,7 @@ services:
       - --extra=15
       - --
       - /api/load_nlpql.sh
-    command: python3 api.py
+    command: python3 app.py
     environment:
       - LETSENCRYPT_HOST=${NLPAAS_SUBDOMAIN}.${DOMAIN}
       - VIRTUAL_HOST=${NLPAAS_SUBDOMAIN}.${DOMAIN}
