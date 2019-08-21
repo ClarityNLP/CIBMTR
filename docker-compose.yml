@@ -384,9 +384,17 @@ services:
   nlpaas:
     container_name: NLPAAS
     hostname: ${NLPAAS_HOSTNAME}
-    image: claritynlp/nlpaas
+    image: claritynlp/clarity-paas
     expose:
       - ${NLPAAS_CONTAINER_PORT}
+    entrypoint:
+      - /api/wait-for-it-extra.sh
+      - identity-provider:${IDENTITY_PROVIDER_CONTAINER_PORT}
+      - --timeout=420
+      - --extra=15
+      - --
+      - load_nlpql.sh
+    command: python3 api.py
     environment:
       - LETSENCRYPT_HOST=${NLPAAS_SUBDOMAIN}.${DOMAIN}
       - VIRTUAL_HOST=${NLPAAS_SUBDOMAIN}.${DOMAIN}
@@ -395,7 +403,7 @@ services:
       - CUSTOM_DIR=${NLPAAS_CUSTOM_DIR}
       - NLP_SOLR_URL=http://identity-and-access-proxy:${IDENTITY_AND_ACCESS_PROXY_CONTAINER_PORT}/solr/sample
       - CLARITY_NLP_URL=http://identity-and-access-proxy:${IDENTITY_AND_ACCESS_PROXY_CONTAINER_PORT}/nlp
-      - CLARITY_TOKEN_URL=${IDENTITY_PROVIDER_SUBDOMAIN}.${DOMAIN}/connect/token
+      - CLARITY_TOKEN_URL=https://${IDENTITY_PROVIDER_SUBDOMAIN}.${DOMAIN}/connect/token
       - CLARITY_NLP_SECRET=${CLIENT_NLPASS_SECRET}
     networks:
       - cibmtr
