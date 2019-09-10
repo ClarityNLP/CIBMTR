@@ -1,7 +1,7 @@
-version: '3'
+version: "3.3"
 
 networks:
-  cibmtr:
+  clarity-fhir:
     driver: bridge
 
 volumes:
@@ -13,11 +13,8 @@ volumes:
   nlp-mongodata:
   ingest-files:
   ingest-mongodata:
-  certs:
-  vhost:
-  html:
-  dhparam:
-  htpasswd:
+  luigi-frontend:
+  letsencrypt:
 
 services:
   mssql:
@@ -33,7 +30,7 @@ services:
       - SA_PASSWORD=${IDP_DB_PASSWORD}
       - MSSQL_PID=Developer
     networks:
-      - cibmtr
+      - clarity-fhir
 
   identity-provider:
     container_name: IDENTITY_PROVIDER
@@ -54,15 +51,12 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=${ASPNETCORE_URLS}
-      - LETSENCRYPT_HOST=${IDENTITY_PROVIDER_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_HOST=${IDENTITY_PROVIDER_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_PORT=${IDENTITY_PROVIDER_CONTAINER_PORT}
       - PROTOCOL=${PROTOCOL}
-      - DOMAIN=${DOMAIN}
-      - SUBDOMAIN=${IDENTITY_PROVIDER_SUBDOMAIN}
-      - DASHBOARD_SUBDOMAIN=${DASHBOARD_CLIENT_SUBDOMAIN}
-      - INGEST_SUBDOMAIN=${INGEST_CLIENT_SUBDOMAIN}
-      - RESULTS_SUBDOMAIN=${RESULTS_CLIENT_SUBDOMAIN}
+      - HOST=${HOST}
+      - IDP_URL=${HOST}/${IDP_PREFIX}
+      - DASHBOARD_URL=${HOST}/${DASHBOARD_PREFIX}
+      - INGEST_URL=${HOST}/${INGEST_PREFIX}
+      - RESULTS_URL=${HOST}/${RESULTS_PREFIX}
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - CLIENT_CLI_SECRET=${CLIENT_CLI_SECRET}
@@ -70,10 +64,11 @@ services:
       - IDP_DB_PASSWORD=${IDP_DB_PASSWORD}
       - IDP_DATABASE=${IDP_DATABASE}
       - IDP_SIGNING_CREDS_PASSPHRASE=${IDP_SIGNING_CREDS_PASSPHRASE}
+      - IS_VHOST=false
     depends_on:
       - mssql
     networks:
-      - cibmtr
+      - clarity-fhir
 
   identity-and-access-proxy:
     container_name: IDENTITY_AND_ACCESS_PROXY
@@ -83,17 +78,8 @@ services:
       - ${IDENTITY_AND_ACCESS_PROXY_CONTAINER_PORT}
     entrypoint: pm2-runtime
     command: proxy.js
-    environment:
-      - LETSENCRYPT_HOST=${IDENTITY_AND_ACCESS_PROXY_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_HOST=${IDENTITY_AND_ACCESS_PROXY_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_PORT=${IDENTITY_AND_ACCESS_PROXY_CONTAINER_PORT}
-      - PROTOCOL=${PROTOCOL}
-      - DOMAIN=${DOMAIN}
-      - DASHBOARD_CLIENT_SUBDOMAIN=${DASHBOARD_CLIENT_SUBDOMAIN}
-      - INGEST_CLIENT_SUBDOMAIN=${INGEST_CLIENT_SUBDOMAIN}
-      - RESULTS_CLIENT_SUBDOMAIN=${RESULTS_CLIENT_SUBDOMAIN}
     networks:
-      - cibmtr
+      - clarity-fhir
 
   nlp-api:
     container_name: NLP_API
@@ -101,6 +87,8 @@ services:
     image: claritynlp/nlp-api
     expose:
       - ${NLP_API_CONTAINER_PORT}
+    volumes:
+      - ./nlp:/api
     entrypoint:
       - /api/wait-for-it-extra.sh
       - ${NLP_SOLR_HOSTNAME}:${NLP_SOLR_CONTAINER_PORT}
@@ -151,33 +139,46 @@ services:
       - REDIS_HOSTNAME=${REDIS_HOSTNAME}
       - REDIS_HOST_PORT=${REDIS_HOST_PORT}
       - REDIS_CONTAINER_PORT=${REDIS_CONTAINER_PORT}
-      - FHIR_CQL_EVAL_URL=${FHIR_CQL_EVAL_URL}
-      - FHIR_DATA_SERVICE_URI=${FHIR_DATA_SERVICE_URI}
-      - FHIR_TERMINOLOGY_SERVICE_URI=${FHIR_TERMINOLOGY_SERVICE_URI}
-      - FHIR_TERMINOLOGY_SERVICE_ENDPOINT=${FHIR_TERMINOLOGY_SERVICE_ENDPOINT}
-      - FHIR_TERMINOLOGY_USER_NAME=${FHIR_TERMINOLOGY_USER_NAME}
-      - FHIR_TERMINOLOGY_USER_PASSWORD=${FHIR_TERMINOLOGY_USER_PASSWORD}
     networks:
-      - cibmtr
+      - clarity-fhir
     depends_on:
       - redis
       - nlp-solr
       - nlp-mongo
       - nlp-postgres
-      - scheduler
+      - luigid
 
-  scheduler:
-    container_name: LUIGI_SCHEDULER
-    hostname: ${SCHEDULER_HOSTNAME}
+  luigid:
+    container_name: scheduler
+    hostname: scheduler
     image: axiom/docker-luigi:2.7.1
     expose:
       - ${SCHEDULER_CONTAINER_PORT}
-    environment:
-      - LETSENCRYPT_HOST=${SCHEDULER_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_HOST=${SCHEDULER_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_PORT=${SCHEDULER_CONTAINER_PORT}
+    volumes:
+      - luigi-frontend:/usr/local/lib/python2.7/site-packages/luigi/static/visualiser
     networks:
-      - cibmtr
+      - clarity-fhir
+
+  frontend-ctrl:
+    restart: always
+    image: claritynlp/front-ctrl
+    volumes:
+      - luigi-frontend:/usr/local/lib/python2.7/site-packages/luigi/static/visualiser
+    links:
+      - luigid:luigid
+      - identity-provider:identity-provider
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.appsecure.rule=Host(`${HOST}`) && PathPrefix(`/luigi`,`/idp`,`/solr`,`/api`)"
+      - "traefik.http.routers.appsecure.entrypoints=websecure"
+      - "traefik.http.routers.appsecure.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.appsecure.tls=true"
+      - "traefik.http.routers.app.rule=Host(`${HOST}`) && PathPrefix(`/luigi`,`/idp`,`/solr`,`/api`)"
+      - "traefik.http.routers.app.entrypoints=web"
+      - "traefik.http.middlewares.https-only.redirectscheme.scheme=https"
+      - "traefik.http.routers.app.middlewares=https-only"
+    networks:
+      - clarity-fhir
 
   nlp-solr:
     container_name: NLP_SOLR
@@ -189,28 +190,25 @@ services:
       - nlp-solrdata:/opt/solr/server/solr/mycores
     environment:
       - SOLR_HEAP=${SOLR_HEAP}
-      - LETSENCRYPT_HOST=${SOLR_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_HOST=${SOLR_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_PORT=${NLP_SOLR_CONTAINER_PORT}
     networks:
-      - cibmtr
+      - clarity-fhir
 
   nlp-mongo:
     container_name: NLP_MONGO
     hostname: ${NLP_MONGO_HOSTNAME}
     image: claritynlp/nlp-mongo
+    expose:
+      - ${NLP_MONGO_CONTAINER_PORT}
+    volumes:
+      - nlp-mongodata:/data/db
     environment:
       - MONGO_DATA_DIR=/data/db
       - MONGO_LOG_DIR=/dev/null
       - MONGO_INITDB_DATABASE=${NLP_MONGO_DATABASE}
       - MONGO_INITDB_ROOT_USERNAME=${NLP_MONGO_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${NLP_MONGO_PASSWORD}
-    expose:
-      - ${NLP_MONGO_CONTAINER_PORT}
-    volumes:
-      - nlp-mongodata:/data/db
     networks:
-      - cibmtr
+      - clarity-fhir
 
   nlp-postgres:
     container_name: NLP_POSTGRES
@@ -227,7 +225,7 @@ services:
     volumes:
       - nlp-pgdata:/var/lib/postgresql/data/
     networks:
-      - cibmtr
+      - clarity-fhir
 
   ingest-api:
     container_name: INGEST_API
@@ -269,15 +267,24 @@ services:
       - REDIS_CONTAINER_PORT=${REDIS_CONTAINER_PORT}
       - PROTOCOL=${PROTOCOL}
       - DOMAIN=${DOMAIN}
-      - INGEST_CLIENT_SUBDOMAIN=${INGEST_CLIENT_SUBDOMAIN}
-      - DASHBOARD_CLIENT_SUBDOMAIN=${DASHBOARD_CLIENT_SUBDOMAIN}
+      - DASHBOARD_URL=${HOST}
+      - INGEST_URL=${HOST}
     networks:
-      - cibmtr
+      - clarity-fhir
     depends_on:
       - ingest-mongo
       - redis
       - nlp-solr
       - nlp-api
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.socket-secure.rule=Host(`${HOST}`) && PathPrefix(`/socket.io`,`/__getcookie`)"
+      - "traefik.http.routers.socket-secure.entrypoints=websecure"
+      - "traefik.http.routers.socket-secure.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.socket.rule=Host(`${HOST}`) && PathPrefix(`/socket.io`,`/__getcookie`)"
+      - "traefik.http.routers.socket.entrypoints=web"
+      - "traefik.http.middlewares.socket-https-only.redirectscheme.scheme=https"
+      - "traefik.http.routers.socket.middlewares=socket-https-only"
 
   ingest-mongo:
     container_name: ${INGEST_MONGO_CONTAINER_NAME}
@@ -294,25 +301,7 @@ services:
     volumes:
       - ingest-mongodata:/data/db
     networks:
-      - cibmtr
-
-  ingest-client:
-    container_name: INGEST_CLIENT
-    hostname: ${INGEST_CLIENT_HOSTNAME}
-    image: claritynlp/ingest-client
-    environment:
-      - PORT=${INGEST_CLIENT_CONTAINER_PORT}
-      - LETSENCRYPT_HOST=${INGEST_CLIENT_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_HOST=${INGEST_CLIENT_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_PORT=80
-      - REACT_APP_IDENTITY_PROVIDER_URL=${IDENTITY_PROVIDER_SUBDOMAIN}.${DOMAIN}
-      - REACT_APP_API_HOST=${IDENTITY_AND_ACCESS_PROXY_SUBDOMAIN}.${DOMAIN}
-      - REACT_APP_DASHBOARD_URL=${DASHBOARD_CLIENT_SUBDOMAIN}.${DOMAIN}
-      - REACT_APP_RESULTS_URL=${RESULTS_CLIENT_SUBDOMAIN}.${DOMAIN}
-    volumes:
-      - /app/node_modules
-    networks:
-      - cibmtr
+      - clarity-fhir
 
   redis:
     container_name: REDIS
@@ -323,26 +312,66 @@ services:
     volumes:
       - redisdata:/data
     networks:
-      - cibmtr
+      - clarity-fhir
+
+  ingest-client:
+    container_name: INGEST_CLIENT
+    hostname: ${INGEST_CLIENT_HOSTNAME}
+    image: claritynlp/ingest-client
+    volumes:
+      - /app/node_modules
+    environment:
+      - PORT=${INGEST_CLIENT_CONTAINER_PORT}
+      - IDENTITY_PROVIDER_URL=${HOST}/${IDP_PREFIX}
+      - API_HOST=${HOST}/${IAAP_PREFIX}
+      - DASHBOARD_URL=${HOST}/${DASHBOARD_PREFIX}
+      - RESULTS_URL=${HOST}/${RESULTS_PREFIX}
+      - INGEST_URL=${HOST}/${INGEST_PREFIX}
+      - SOCKET_URL=${HOST}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=${INGEST_CLIENT_CONTAINER_PORT}"
+      - "traefik.http.routers.ingest-secure.rule=Host(`${HOST}`) && PathPrefix(`/${INGEST_PREFIX}`)"
+      - "traefik.http.routers.ingest-secure.entrypoints=websecure"
+      - "traefik.http.routers.ingest-secure.tls.certresolver=mytlschallenge"
+      - "traefik.http.middlewares.ingest-secure-stripprefix.stripprefix.prefixes=/${INGEST_PREFIX}"
+      - "traefik.http.routers.ingest-secure.middlewares=ingest-secure-stripprefix"
+      - "traefik.http.routers.ingest.rule=Host(`${HOST}`) && PathPrefix(`/${INGEST_PREFIX}`)"
+      - "traefik.http.routers.ingest.entrypoints=web"
+      - "traefik.http.middlewares.ingest-https-only.redirectscheme.scheme=https"
+      - "traefik.http.routers.ingest.middlewares=ingest-https-only"
+    networks:
+      - clarity-fhir
 
   results-client:
     container_name: RESULTS_CLIENT
     hostname: ${RESULTS_CLIENT_HOSTNAME}
-    image: claritynlp/results-client
+    image: claritynlp/viewer-client
     volumes:
       - /app/node_modules
     environment:
       - PORT=${RESULTS_CLIENT_CONTAINER_PORT}
-      - LETSENCRYPT_HOST=${RESULTS_CLIENT_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_HOST=${RESULTS_CLIENT_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_PORT=80
-      - REACT_APP_IDENTITY_PROVIDER_URL=${IDENTITY_PROVIDER_SUBDOMAIN}.${DOMAIN}
-      - REACT_APP_API_HOST=${IDENTITY_AND_ACCESS_PROXY_SUBDOMAIN}.${DOMAIN}
-      - REACT_APP_DASHBOARD_URL=${DASHBOARD_CLIENT_SUBDOMAIN}.${DOMAIN}
-      - REACT_APP_INGEST_URL=${INGEST_CLIENT_SUBDOMAIN}.${DOMAIN}
-      - REACT_APP_LUIGI_URL=${SCHEDULER_SUBDOMAIN}.${DOMAIN}
+      - IDENTITY_PROVIDER_URL=${HOST}/${IDP_PREFIX}
+      - API_HOST=${HOST}/${IAAP_PREFIX}
+      - DASHBOARD_URL=${HOST}/${DASHBOARD_PREFIX}
+      - INGEST_URL=${HOST}/${INGEST_PREFIX}
+      - RESULTS_URL=${HOST}/${RESULTS_PREFIX}
+      - SOLR_URL=${HOST}/${SOLR_PREFIX}
+      - LUIGI_URL=${HOST}/${SCHEDULER_PREFIX}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=${RESULTS_CLIENT_CONTAINER_PORT}"
+      - "traefik.http.routers.results-secure.rule=Host(`${HOST}`) && PathPrefix(`/${RESULTS_PREFIX}`)"
+      - "traefik.http.routers.results-secure.entrypoints=websecure"
+      - "traefik.http.routers.results-secure.tls.certresolver=mytlschallenge"
+      - "traefik.http.middlewares.results-secure-stripprefix.stripprefix.prefixes=/${RESULTS_PREFIX}"
+      - "traefik.http.routers.results-secure.middlewares=results-secure-stripprefix"
+      - "traefik.http.routers.results.rule=Host(`${HOST}`) && PathPrefix(`/${RESULTS_PREFIX}`)"
+      - "traefik.http.routers.results.entrypoints=web"
+      - "traefik.http.middlewares.results-https-only.redirectscheme.scheme=https"
+      - "traefik.http.routers.results.middlewares=results-https-only"
     networks:
-      - cibmtr
+      - clarity-fhir
 
   dashboard-client:
     container_name: DASHBOARD_CLIENT
@@ -352,16 +381,27 @@ services:
       - /app/node_modules
     environment:
       - PORT=${DASHBOARD_CLIENT_CONTAINER_PORT}
-      - LETSENCRYPT_HOST=${DASHBOARD_CLIENT_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_HOST=${DASHBOARD_CLIENT_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_PORT=80
-      - REACT_APP_IDENTITY_PROVIDER_URL=${IDENTITY_PROVIDER_SUBDOMAIN}.${DOMAIN}
-      - REACT_APP_API_HOST=${IDENTITY_AND_ACCESS_PROXY_SUBDOMAIN}.${DOMAIN}
-      - REACT_APP_INGEST_URL=${INGEST_CLIENT_SUBDOMAIN}.${DOMAIN}
-      - REACT_APP_RESULTS_URL=${RESULTS_CLIENT_SUBDOMAIN}.${DOMAIN}
+      - IDENTITY_PROVIDER_URL=${HOST}/${IDP_PREFIX}
+      - API_HOST=${HOST}/${IAAP_PREFIX}
+      - INGEST_URL=${HOST}/${INGEST_PREFIX}
+      - RESULTS_URL=${HOST}/${RESULTS_PREFIX}
+      - DASHBOARD_URL=${HOST}/${DASHBOARD_PREFIX}
+      - SOCKET_URL=${HOST}
       - REACT_APP_DOCUMETATION_URL=https://claritynlp.readthedocs.io/en/latest/index.html
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=${DASHBOARD_CLIENT_CONTAINER_PORT}"
+      - "traefik.http.routers.dashboard-secure.rule=Host(`${HOST}`) && PathPrefix(`/${DASHBOARD_PREFIX}`)"
+      - "traefik.http.routers.dashboard-secure.entrypoints=websecure"
+      - "traefik.http.routers.dashboard-secure.tls.certresolver=mytlschallenge"
+      - "traefik.http.middlewares.dashboard-secure-stripprefix.stripprefix.prefixes=/${DASHBOARD_PREFIX}"
+      - "traefik.http.routers.dashboard-secure.middlewares=dashboard-secure-stripprefix"
+      - "traefik.http.routers.dashboard.rule=Host(`${HOST}`) && PathPrefix(`/${DASHBOARD_PREFIX}`)"
+      - "traefik.http.routers.dashboard.entrypoints=web"
+      - "traefik.http.middlewares.dashboard-https-only.redirectscheme.scheme=https"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-https-only"
     networks:
-      - cibmtr
+      - clarity-fhir
 
   form:
     container_name: FORM
@@ -371,15 +411,24 @@ services:
       - /app/node_modules
     environment:
       - PORT=${FORM_CONTAINER_PORT}
-      - LETSENCRYPT_HOST=${FORM_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_HOST=${FORM_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_PORT=80
-      - REACT_APP_CLARITY_NLPAAS_URL=https://${NLPAAS_SUBDOMAIN}.${DOMAIN}/job/${NLPAAS_CUSTOM_DIR}/4100r4/
+      - REACT_APP_CLARITY_NLPAAS_URL=https://${HOST}/${NLPAAS_PREFIX}/job/${NLPAAS_CUSTOM_DIR}/4100r4/
       - REACT_APP_ISS=${FORM_ISS}
       - REACT_APP_SCOPES=${FORM_SCOPES}
       - REACT_APP_CLIENT_ID=${FORM_CLIENT_ID}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=${FORM_CONTAINER_PORT}"
+      - "traefik.http.routers.form-secure.rule=Host(`${HOST}`) && PathPrefix(`/${FORM_PREFIX}`)"
+      - "traefik.http.routers.form-secure.entrypoints=websecure"
+      - "traefik.http.routers.form-secure.tls.certresolver=mytlschallenge"
+      - "traefik.http.middlewares.form-secure-stripprefix.stripprefix.prefixes=/${FORM_PREFIX}"
+      - "traefik.http.routers.form-secure.middlewares=form-secure-stripprefix"
+      - "traefik.http.routers.form.rule=Host(`${HOST}`) && PathPrefix(`/${FORM_PREFIX}`)"
+      - "traefik.http.routers.form.entrypoints=web"
+      - "traefik.http.middlewares.form-https-only.redirectscheme.scheme=https"
+      - "traefik.http.routers.form.middlewares=form-https-only"
     networks:
-      - cibmtr
+      - clarity-fhir
 
   nlpaas:
     container_name: NLPAAS
@@ -396,17 +445,26 @@ services:
       - /api/load_nlpql.sh
     command: python3 app.py
     environment:
-      - LETSENCRYPT_HOST=${NLPAAS_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_HOST=${NLPAAS_SUBDOMAIN}.${DOMAIN}
-      - VIRTUAL_PORT=${NLPAAS_CONTAINER_PORT}
       - CUSTOM_S3_URL=${NLPAAS_CUSTOM_S3_URL}
       - CUSTOM_DIR=${NLPAAS_CUSTOM_DIR}
-      - NLP_SOLR_URL=https://${IDENTITY_AND_ACCESS_PROXY_SUBDOMAIN}.${DOMAIN}/solr/sample
-      - CLARITY_NLP_URL=https://${IDENTITY_AND_ACCESS_PROXY_SUBDOMAIN}.${DOMAIN}/nlp
-      - CLARITY_TOKEN_URL=https://${IDENTITY_PROVIDER_SUBDOMAIN}.${DOMAIN}/connect/token
+      - NLP_SOLR_URL=https://${HOST}/${IAAP_PREFIX}/solr/sample
+      - CLARITY_NLP_URL=https://${HOST}/${IAAP_PREFIX}/nlp
+      - CLARITY_TOKEN_URL=https://${HOST}/${IDP_PREFIX}/connect/token
       - CLARITY_NLP_SECRET=${CLIENT_NLPASS_SECRET}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=${NLPAAS_CONTAINER_PORT}"
+      - "traefik.http.routers.paas-secure.rule=Host(`${HOST}`) && PathPrefix(`/${NLPAAS_PREFIX}`)"
+      - "traefik.http.routers.paas-secure.entrypoints=websecure"
+      - "traefik.http.routers.paas-secure.tls.certresolver=mytlschallenge"
+      - "traefik.http.middlewares.paas-secure-stripprefix.stripprefix.prefixes=/${NLPAAS_PREFIX}"
+      - "traefik.http.routers.paas-secure.middlewares=paas-secure-stripprefix"
+      - "traefik.http.routers.paas.rule=Host(`${HOST}`) && PathPrefix(`/${NLPAAS_PREFIX}`)"
+      - "traefik.http.routers.paas.entrypoints=web"
+      - "traefik.http.middlewares.paas-https-only.redirectscheme.scheme=https"
+      - "traefik.http.routers.paas.middlewares=paas-https-only"
     networks:
-      - cibmtr
+      - clarity-fhir
     depends_on:
       - nlp-api
 
@@ -415,48 +473,29 @@ services:
     hostname: cql-execution
     image: claritynlp/cqlexecutionservice:dstu2
     networks:
-      - cibmtr
+      - clarity-fhir
     depends_on:
       - nlp-api
 
-  nginx-proxy:
-    container_name: NGINX_PROXY
-    hostname: nginx-proxy
-    image: claritynlp/nginx-proxy
+  traefik:
+    image: "traefik:v2.0.0-rc1"
+    container_name: "traefik"
+    command:
+      - "--log.level=INFO"
+      - "--api=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
+      - "--certificatesresolvers.mytlschallenge.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
       - "443:443"
+      - "8080:8080"
     volumes:
-      - certs:/etc/nginx/certs:ro
-      - vhost:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-      - dhparam:/etc/nginx/dhparam
-      - htpasswd:/etc/nginx/htpasswd
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-    environment:
-      - SOLR_USERNAME=${SOLR_USERNAME}
-      - SOLR_PASSWORD=${SOLR_PASSWORD}
-      - SOLR_SUBDOMAIN=${SOLR_SUBDOMAIN}
-      - SCHEDULER_USERNAME=${SCHEDULER_USERNAME}
-      - SCHEDULER_PASSWORD=${SCHEDULER_PASSWORD}
-      - SCHEDULER_SUBDOMAIN=${SCHEDULER_SUBDOMAIN}
-      - DOMAIN=${DOMAIN}
-    labels:
-      - com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - letsencrypt:/letsencrypt
     networks:
-      - cibmtr
-
-  letsencrypt:
-    container_name: LETS_ENCRYPT
-    hostname: nginx-proxy-le
-    image: jrcs/letsencrypt-nginx-proxy-companion
-    volumes:
-      - certs:/etc/nginx/certs
-      - vhost:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-      - dhparam:/etc/nginx/dhparam:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    depends_on:
-      - nginx-proxy
-    networks:
-      - cibmtr
+      - clarity-fhir
