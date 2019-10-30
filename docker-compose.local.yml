@@ -395,7 +395,7 @@ services:
   cql-execution:
     container_name: CQL_EXECUTION
     hostname: cql-execution
-    image: claritynlp/cqlexecutionservice:dstu2
+    image: claritynlp/cqlexecutionservice:latest
     networks:
       - cibmtr
     depends_on:

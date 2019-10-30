@@ -469,7 +469,7 @@ services:
   cql-execution:
     container_name: CQL_EXECUTION
     hostname: cql-execution
-    image: claritynlp/cqlexecutionservice:dstu2
+    image: claritynlp/cqlexecutionservice:latest
     networks:
       - clarity-fhir
     depends_on:
