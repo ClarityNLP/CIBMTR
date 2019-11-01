@@ -448,6 +448,7 @@ services:
       - CLARITY_NLP_URL=https://${HOST}/${IAAP_PREFIX}/nlp
       - CLARITY_TOKEN_URL=https://${HOST}/${IDP_PREFIX}/connect/token
       - CLARITY_NLP_SECRET=${CLIENT_NLPASS_SECRET}
+      - CQL_EVAL_URL=http://cql-execution:8080/cql/evaluate
     labels:
       - "traefik.enable=true"
       - "traefik.port=${NLPAAS_CONTAINER_PORT}"
