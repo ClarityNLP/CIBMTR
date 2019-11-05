@@ -472,7 +472,7 @@ services:
       - --extra=15
       - --
       - /api/load_nlpql.sh
-    command: python3 app.py
+    command: gunicorn api --config config.py --timeout 500 -b :5000
     environment:
       - CUSTOM_S3_URL=${NLPAAS_CUSTOM_S3_URL}
       - CUSTOM_DIR=${NLPAAS_CUSTOM_DIR}
