@@ -420,15 +420,15 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.port=${FORM_CONTAINER_PORT}"
-      - "traefik.http.routers.form-secure.rule=Host(`${HOST}`) && PathPrefix(`/${FORM_PREFIX}`)"
-      - "traefik.http.routers.form-secure.entrypoints=websecure"
-      - "traefik.http.routers.form-secure.tls.certresolver=mytlschallenge"
-      - "traefik.http.middlewares.form-secure-stripprefix.stripprefix.prefixes=/${FORM_PREFIX}"
-      - "traefik.http.routers.form-secure.middlewares=form-secure-stripprefix"
-      - "traefik.http.routers.form.rule=Host(`${HOST}`) && PathPrefix(`/${FORM_PREFIX}`)"
-      - "traefik.http.routers.form.entrypoints=web"
-      - "traefik.http.middlewares.form-https-only.redirectscheme.scheme=https"
-      - "traefik.http.routers.form.middlewares=form-https-only"
+      - "traefik.http.routers.form-secure-v1.rule=Host(`${HOST}`) && PathPrefix(`/${FORM_PREFIX}`)"
+      - "traefik.http.routers.form-secure-v1.entrypoints=websecure"
+      - "traefik.http.routers.form-secure-v1.tls.certresolver=mytlschallenge"
+      - "traefik.http.middlewares.form-secure-v1-stripprefix.stripprefix.prefixes=/${FORM_PREFIX}"
+      - "traefik.http.routers.form-secure-v1.middlewares=form-secure-v1-stripprefix"
+      - "traefik.http.routers.form-v1.rule=Host(`${HOST}`) && PathPrefix(`/${FORM_PREFIX}`)"
+      - "traefik.http.routers.form-v1.entrypoints=web"
+      - "traefik.http.middlewares.form-v1-https-only.redirectscheme.scheme=https"
+      - "traefik.http.routers.form-v1.middlewares=form-v1-https-only"
     networks:
       - clarity-fhir
 
