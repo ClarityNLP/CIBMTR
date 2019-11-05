@@ -77,6 +77,9 @@ services:
     expose:
       - ${IDENTITY_AND_ACCESS_PROXY_CONTAINER_PORT}
     entrypoint: pm2-runtime
+    environment:
+      - IDENTITY_PROVIDER_HOSTNAME=${IDENTITY_PROVIDER_HOSTNAME}
+      - IDENTITY_PROVIDER_CONTAINER_PORT=${IDENTITY_PROVIDER_CONTAINER_PORT}
     command: proxy.js
     networks:
       - clarity-fhir
@@ -181,8 +184,10 @@ services:
     container_name: NLP_SOLR
     hostname: ${NLP_SOLR_HOSTNAME}
     image: claritynlp/nlp-solr
-    expose:
-      - ${NLP_SOLR_CONTAINER_PORT}
+    # expose:
+    #   - ${NLP_SOLR_CONTAINER_PORT}
+    ports:
+        - 8983:${NLP_SOLR_CONTAINER_PORT} #TEMPORARY -- FOR RICHARD
     volumes:
       - nlp-solrdata:/opt/solr/server/solr/mycores
     environment:
@@ -400,10 +405,10 @@ services:
     networks:
       - clarity-fhir
 
-  form:
-    container_name: FORM
-    hostname: form
-    image: claritynlp/form-builder
+  form-v1.0:
+    container_name: FORM-v1.0
+    hostname: form-v1.0
+    image: claritynlp/form-builder:v1.0
     volumes:
       - /app/node_modules
     environment:
@@ -421,6 +426,33 @@ services:
       - "traefik.http.middlewares.form-secure-stripprefix.stripprefix.prefixes=/${FORM_PREFIX}"
       - "traefik.http.routers.form-secure.middlewares=form-secure-stripprefix"
       - "traefik.http.routers.form.rule=Host(`${HOST}`) && PathPrefix(`/${FORM_PREFIX}`)"
+      - "traefik.http.routers.form.entrypoints=web"
+      - "traefik.http.middlewares.form-https-only.redirectscheme.scheme=https"
+      - "traefik.http.routers.form.middlewares=form-https-only"
+    networks:
+      - clarity-fhir
+
+  form-latest:
+    container_name: FORM-latest
+    hostname: form-latest
+    image: claritynlp/form-builder
+    volumes:
+      - /app/node_modules
+    environment:
+      - PORT=${FORM_CONTAINER_PORT}
+      - NLPAAS_URL=https://${HOST}/${NLPAAS_PREFIX}/job/${NLPAAS_CUSTOM_DIR}/4100r4/
+      - FHIR_ISS=${FORM_ISS}
+      - FHIR_SCOPES=${FORM_SCOPES}
+      - FHIR_CLIENT_ID=${FORM_CLIENT_ID}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=${FORM_CONTAINER_PORT}"
+      - "traefik.http.routers.form-secure.rule=Host(`${HOST}`) && PathPrefix(`/form-v2`)"
+      - "traefik.http.routers.form-secure.entrypoints=websecure"
+      - "traefik.http.routers.form-secure.tls.certresolver=mytlschallenge"
+      - "traefik.http.middlewares.form-secure-stripprefix.stripprefix.prefixes=/form-v2"
+      - "traefik.http.routers.form-secure.middlewares=form-secure-stripprefix"
+      - "traefik.http.routers.form.rule=Host(`${HOST}`) && PathPrefix(`/form-v2`)"
       - "traefik.http.routers.form.entrypoints=web"
       - "traefik.http.middlewares.form-https-only.redirectscheme.scheme=https"
       - "traefik.http.routers.form.middlewares=form-https-only"
@@ -472,6 +504,8 @@ services:
     image: claritynlp/cqlexecutionservice:latest
     networks:
       - clarity-fhir
+    ports:
+      - "9000:8080" #TEMPORARY -- FOR RICHARD
     depends_on:
       - nlp-api
 
