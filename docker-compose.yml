@@ -525,7 +525,7 @@ services:
       - nlp-api
 
   traefik:
-    image: "traefik:v2.0.0-rc1"
+    image: "traefik:v2.1.2"
     container_name: "traefik"
     command:
       - "--log.level=INFO"
