@@ -512,16 +512,16 @@ services:
       - redis
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.appsecure.rule=Host(`${HOST}`) && PathPrefix(`/smarthub`)"
-      - "traefik.http.routers.appsecure.entrypoints=websecure"
-      - "traefik.http.routers.appsecure.tls.certresolver=mytlschallenge"
-      - "traefik.http.routers.appsecure.tls=true"
-      - "traefik.http.middlewares.stripprefix.stripprefix.prefixes=/smarthub"
-      - "traefik.http.routers.appsecure.middlewares=stripprefix"
-      - "traefik.http.routers.app.rule=Host(`${HOST}`) && PathPrefix(`/smarthub`)"
-      - "traefik.http.routers.app.entrypoints=web"
-      - "traefik.http.middlewares.https-only.redirectscheme.scheme=https"
-      - "traefik.http.routers.app.middlewares=https-only"
+      - "traefik.http.routers.smarthub-appsecure.rule=Host(`${HOST}`) && PathPrefix(`/smarthub`)"
+      - "traefik.http.routers.smarthub-appsecure.entrypoints=websecure"
+      - "traefik.http.routers.smarthub-appsecure.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.smarthub-appsecure.tls=true"
+      - "traefik.http.middlewares.smarthub-stripprefix.stripprefix.prefixes=/smarthub"
+      - "traefik.http.routers.smarthub-appsecure.middlewares=smarthub-stripprefix"
+      - "traefik.http.routers.smarthub-app.rule=Host(`${HOST}`) && PathPrefix(`/smarthub`)"
+      - "traefik.http.routers.smarthub-app.entrypoints=web"
+      - "traefik.http.middlewares.smarthub-https-only.redirectscheme.scheme=https"
+      - "traefik.http.routers.smarthub-app.middlewares=smarthub-https-only"
 
   nlpaas:
     container_name: NLPAAS
