@@ -50,7 +50,7 @@ export SCHEDULER_HOST_PORT=8082
 export SCHEDULER_CONTAINER_PORT=8082
 export SCHEDULER_USERNAME=admin
 export SCHEDULER_PASSWORD=admin
-export LUIGI_WORKERS=1
+export LUIGI_WORKERS=5
 export LUIGI_URL=http://localhost:8082
 export LUIGI_SCHEDULER_URL=http://scheduler:8082
 export SCHEDULER_PREFIX=luigi
@@ -125,9 +125,9 @@ export RESULTS_PREFIX=results
 
 # GENERIC
 export BASE_URL=http://localhost
-export HOST=localhost
 export ENTRYPOINT_SSL=443
 export ENTRYPOINT_NON_SSL=80
+export HOST=bare.claritynlp.cloud
 export PROTOCOL=https
 export USE_SSL=true
 export ACME_EMAIL=postmaster@mydomain.com
@@ -146,9 +146,13 @@ export DASHBOARD_API_CONTAINER_PORT=8750
 export INTERVAL=5000
 
 # FORM
-export FORM_ISS=https://fhir-myrecord.sandboxcerner.com/dstu2/0b8a0111-e8e6-4c26-a91c-5069cbc6b1ca
-export FORM_SCOPES='''patient/Condition.read patient/DiagnosticReport.read patient/DocumentReference.read patient/MedicationAdministration.read patient/MedicationOrder.read patient/MedicationStatement.read patient/Observation.read patient/Patient.read patient/Procedure.read launch/patient profile openid online_access'''
-export FORM_CLIENT_ID=171acbe3-1c80-47bb-b1bb-cc1fc0d20314
+export FORM_ISS=https://apps.hdap.gatech.edu/omoponfhir3/fhir
+##export FORM_SCOPES=launch profile openid online_access patient/Condition.read patient/DocumentReference.read patient/Encounter.read patient/MedicationStatement.read patient/MedicationRequest.read patient/Observation.read patient/Patient.read patient/Procedure.read
+export FORM_SCOPES=launch profile openid online_access patient/Condition.read patient/DocumentReference.read patient/Encounter.read patient/MedicationStatement.read patient/MedicationRequest.read patient/Observation.read patient/Patient.read patient/Procedure.read
+#export FORM_CLIENT_ID=b9cd475f-d580-461c-a6bc-8c3d4384b306
+#export FORM_CLIENT_ID=677052c0-e7f9-4a67-8a0d-23ed7e2a61bc
+#export FORM_CLIENT_ID=37484257-6274-475c-81cb-8ade51553752
+export FORM_CLIENT_ID=9d392086-ffc8-489c-ba06-8adef94047eb
 export FORM_CONTAINER_PORT=3000
 export FORM_PREFIX=form
 
@@ -156,13 +160,14 @@ export FORM_PREFIX=form
 export NLPAAS_HOSTNAME=nlpaas
 export NLPAAS_CONTAINER_PORT=5000
 export NLPAAS_PREFIX=paas
-export NLPAAS_CUSTOM_S3_URL=custom_s3_url
-export NLPAAS_CUSTOM_DIR=custom_dir
+export NLPAAS_CUSTOM_S3_URL=https://nlpql-form-content.s3.amazonaws.com/NLPQL_form_content.zip
+export NLPAAS_CUSTOM_DIR=NLPQL_form_content
 
 # CQL / FHIR
-export FHIR_CQL_EVAL_URL=https://gt-apps.hdap.gatech.edu/cql/evaluate
-export FHIR_DATA_SERVICE_URI=https://apps.hdap.gatech.edu/gt-fhir/fhir/
+#export FHIR_CQL_EVAL_URL=https://apps.hdap.gatech.edu/cql/evaluate
+export FHIR_CQL_EVAL_URL=http://cql-execution:8080/cql/evaluate
+export FHIR_DATA_SERVICE_URI=https://apps.hdap.gatech.edu/omoponfhir3/fhir/
 export FHIR_TERMINOLOGY_SERVICE_URI=https://cts.nlm.nih.gov/fhir/
 export FHIR_TERMINOLOGY_SERVICE_ENDPOINT="Terminology Service Endpoint"
-export FHIR_TERMINOLOGY_USER_NAME=username
-export FHIR_TERMINOLOGY_USER_PASSWORD=password
+export FHIR_TERMINOLOGY_USER_NAME=jduke99
+export FHIR_TERMINOLOGY_USER_PASSWORD=v6R4*SsU39
