@@ -475,6 +475,52 @@ services:
     networks:
       - clarity-fhir
 
+  smarthub:
+    container_name: SMARTHUB
+    hostname: smarthub
+    image: claritynlp/smarthub
+    volumes:
+      - /app/node_modules/
+    expose:
+      - "1337"
+    entrypoint:
+      - /app/wait-for-it-extra.sh
+      - ${REDIS_HOSTNAME}:${REDIS_CONTAINER_PORT}
+      - ${INGEST_MONGO_HOSTNAME}:${INGEST_MONGO_CONTAINER_PORT}
+      - --timeout=420
+      - --
+      - pm2-runtime
+    command: app.js
+    environment:
+      - NODE_ENV=production
+      - MONGO_USERNAME=${INGEST_MONGO_USERNAME}
+      - MONGO_PASSWORD=${INGEST_MONGO_PASSWORD}
+      - MONGO_HOSTNAME=${INGEST_MONGO_HOSTNAME}
+      - MONGO_CONTAINER_PORT=${INGEST_MONGO_CONTAINER_PORT}
+      - MONGO_DATABASE=smarthub
+      - LOG_LEVEL=info
+      - SMARTHUB_UI_ORIGIN=bare.claritynlp.cloud,
+      - REDIS_HOSTNAME=${REDIS_HOSTNAME}
+      - REDIS_CONTAINER_PORT=${REDIS_CONTAINER_PORT}
+      - PROTOCOL=${PROTOCOL}
+    networks:
+      - clarity-fhir
+    depends_on:
+      - ingest-mongo
+      - redis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.appsecure.rule=Host(`${HOST}`) && PathPrefix(`/smarthub`)"
+      - "traefik.http.routers.appsecure.entrypoints=websecure"
+      - "traefik.http.routers.appsecure.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.appsecure.tls=true"
+      - "traefik.http.middlewares.stripprefix.stripprefix.prefixes=/smarthub"
+      - "traefik.http.routers.appsecure.middlewares=stripprefix"
+      - "traefik.http.routers.app.rule=Host(`${HOST}`) && PathPrefix(`/smarthub`)"
+      - "traefik.http.routers.app.entrypoints=web"
+      - "traefik.http.middlewares.https-only.redirectscheme.scheme=https"
+      - "traefik.http.routers.app.middlewares=https-only"
+
   nlpaas:
     container_name: NLPAAS
     hostname: ${NLPAAS_HOSTNAME}
