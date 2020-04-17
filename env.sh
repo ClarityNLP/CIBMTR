@@ -166,3 +166,10 @@ export FHIR_TERMINOLOGY_SERVICE_URI=https://cts.nlm.nih.gov/fhir/
 export FHIR_TERMINOLOGY_SERVICE_ENDPOINT="Terminology Service Endpoint"
 export FHIR_TERMINOLOGY_USER_NAME=username
 export FHIR_TERMINOLOGY_USER_PASSWORD=password
+
+# SMARTHUB
+export FHIR_CLIENT_ID=3464ca32-ae6e-43b4-b155-528febc6d0ea
+export FHIR_TOKEN_URL=https://apps.hdap.gatech.edu/omoponfhir3/smart/token
+export FHIR_URL=https://apps.hdap.gatech.edu/omoponfhir3/fhir
+export FHIR_KID=202004162200
+export FHIR_PRIVATE_KEY="<ADD-HERE>"

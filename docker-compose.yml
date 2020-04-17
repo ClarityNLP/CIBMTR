@@ -503,6 +503,11 @@ services:
       - REDIS_HOSTNAME=${REDIS_HOSTNAME}
       - REDIS_CONTAINER_PORT=${REDIS_CONTAINER_PORT}
       - PROTOCOL=${PROTOCOL}
+      - FHIR_CLIENT_ID=${FHIR_CLIENT_ID}
+      - FHIR_TOKEN_URL=${FHIR_TOKEN_URL}
+      - FHIR_URL=${FHIR_URL}
+      - FHIR_KID=${FHIR_KID}
+      - FHIR_PRIVATE_KEY=${FHIR_PRIVATE_KEY}
     networks:
       - clarity-fhir
     depends_on:
