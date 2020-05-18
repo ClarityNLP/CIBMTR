@@ -448,10 +448,10 @@ services:
     networks:
       - clarity-fhir
 
-  form-latest:
-    container_name: FORM-latest
-    hostname: form-latest
-    image: claritynlp/form-builder
+  form-v2.0:
+    container_name: FORM-v2.0
+    hostname: form-v2.0
+    image: claritynlp/form-builder:v2.0
     volumes:
       - /app/node_modules
     environment:
@@ -474,6 +474,36 @@ services:
       - "traefik.http.middlewares.form-https-only.redirectscheme.scheme=https"
       - "traefik.http.middlewares.form-https-only.redirectscheme.port=${ENTRYPOINT_SSL}"
       - "traefik.http.routers.form.middlewares=form-https-only"
+    networks:
+      - clarity-fhir
+
+  smartchart:
+    container_name: SMARTCHART
+    hostname: smartchart
+    image: claritynlp/form-builder
+    volumes:
+      - /app/node_modules
+    environment:
+      - PORT=${FORM_CONTAINER_PORT}
+      - NLPAAS_URL=https://${HOST}/${NLPAAS_PREFIX}
+      - SMARTHUB_URL=https://${HOST}/smarthub
+      - FORM_CMS_URL=https://${HOST}/${NLPAAS_PREFIX}
+      - FHIR_ISS=${FORM_ISS}
+      - FHIR_SCOPES=${FORM_SCOPES}
+      - FHIR_CLIENT_ID=9aa186f3-03b8-4c6a-ab26-0d8c3fd1dd83
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=${FORM_CONTAINER_PORT}"
+      - "traefik.http.routers.smartchart-secure.rule=Host(`${HOST}`) && PathPrefix(`/smartchart`)"
+      - "traefik.http.routers.smartchart-secure.entrypoints=websecure"
+      - "traefik.http.routers.smartchart-secure.tls.certresolver=mytlschallenge"
+      - "traefik.http.middlewares.smartchart-secure-stripprefix.stripprefix.prefixes=/smartchart"
+      - "traefik.http.routers.smartchart-secure.middlewares=smartchart-secure-stripprefix"
+      - "traefik.http.routers.smartchart.rule=Host(`${HOST}`) && PathPrefix(`/smartchart`)"
+      - "traefik.http.routers.smartchart.entrypoints=web"
+      - "traefik.http.middlewares.smartchart-https-only.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.smartchart-https-only.redirectscheme.port=${ENTRYPOINT_SSL}"
+      - "traefik.http.routers.smartchart.middlewares=smartchart-https-only"
     networks:
       - clarity-fhir
 
@@ -505,6 +535,12 @@ services:
       - REDIS_HOSTNAME=${REDIS_HOSTNAME}
       - REDIS_CONTAINER_PORT=${REDIS_CONTAINER_PORT}
       - PROTOCOL=${PROTOCOL}
+      - FHIR_CLIENT_ID=${FHIR_CLIENT_ID}
+      - FHIR_TOKEN_URL=${FHIR_TOKEN_URL}
+      - FHIR_URL=${FHIR_URL}
+      - FHIR_KID=${FHIR_KID}
+      - FHIR_PRIVATE_KEY=${FHIR_PRIVATE_KEY}
+      - NLPAAS_URL=http://nlpaas:5000
     networks:
       - clarity-fhir
     depends_on:
