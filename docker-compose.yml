@@ -88,6 +88,7 @@ services:
       - clarity-fhir
 
   nlp-api:
+    restart: always
     container_name: NLP_API
     hostname: ${NLP_API_HOSTNAME}
     image: claritynlp/nlp-api
@@ -155,9 +156,10 @@ services:
       - luigid
 
   luigid:
+    restart: always
     container_name: scheduler
     hostname: scheduler
-    image: axiom/docker-luigi:2.7.1
+    image: axiom/docker-luigi:2.8.7
     expose:
       - ${SCHEDULER_CONTAINER_PORT}
     volumes:
@@ -193,6 +195,7 @@ services:
       - clarity-fhir
 
   nlp-solr:
+    restart: always
     container_name: NLP_SOLR
     hostname: ${NLP_SOLR_HOSTNAME}
     image: claritynlp/nlp-solr
@@ -208,6 +211,7 @@ services:
       - clarity-fhir
 
   nlp-mongo:
+    restart: always
     container_name: NLP_MONGO
     hostname: ${NLP_MONGO_HOSTNAME}
     image: claritynlp/nlp-mongo
@@ -581,7 +585,8 @@ services:
       - CLARITY_NLP_URL=https://${HOST}/${IAAP_PREFIX}/nlp
       - CLARITY_TOKEN_URL=https://${HOST}/${IDP_PREFIX}/connect/token
       - CLARITY_NLP_SECRET=${CLIENT_NLPASS_SECRET}
-      - CQL_EVAL_URL=http://cql-execution:8080/cql/evaluate
+        #- CQL_EVAL_URL=http://cql-execution:8080/cql/evaluate
+      - CQL_EVAL_URL=${FHIR_CQL_EVAL_URL}
       - SMARTHUB_URL=http://smarthub:1337
     labels:
       - "traefik.enable=true"
