@@ -23,7 +23,8 @@ services:
   mssql:
     container_name: IDP_MSSQL
     hostname: ${IDP_DB_HOSTNAME}
-    image: mcr.microsoft.com/mssql/server
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    user: root
     expose:
       - ${IDP_DB_CONTAINER_PORT}
     volumes:
