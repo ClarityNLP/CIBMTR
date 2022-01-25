@@ -617,7 +617,7 @@ services:
   cql-execution:
     container_name: CQL_EXECUTION
     hostname: cql-execution
-    image: claritynlp/cqlexecutionservice:latest
+    image: claritynlp/cqlexecutionservice:1.1
     ports:
      - "9000:8080"
     networks:
