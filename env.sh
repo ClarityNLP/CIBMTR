@@ -152,7 +152,8 @@ export FORM_SCOPES=launch profile openid online_access patient/Condition.read pa
 #export FORM_CLIENT_ID=b9cd475f-d580-461c-a6bc-8c3d4384b306
 #export FORM_CLIENT_ID=677052c0-e7f9-4a67-8a0d-23ed7e2a61bc
 #export FORM_CLIENT_ID=37484257-6274-475c-81cb-8ade51553752
-export FORM_CLIENT_ID=9d392086-ffc8-489c-ba06-8adef94047eb
+#export FORM_CLIENT_ID=9d392086-ffc8-489c-ba06-8adef94047eb
+export FORM_CLIENT_ID=677052c0-e7f9-4a67-8a0d-23ed7e2a61bc
 export FORM_CONTAINER_PORT=3000
 export FORM_PREFIX=form
 
@@ -173,6 +174,9 @@ export FHIR_TERMINOLOGY_USER_NAME=jduke99
 export FHIR_TERMINOLOGY_USER_PASSWORD=v6R4*SsU39
 
 # SMARTHUB
+export SMARTHUB_MONGO_DATABASE=smarthub
+export SMARTHUB_MONGO_USERNAME=smarthub
+export SMARTHUB_MONGO_PASSWORD=smarthub
 export FHIR_CLIENT_ID=3464ca32-ae6e-43b4-b155-528febc6d0ea
 export FHIR_TOKEN_URL=https://apps.hdap.gatech.edu/omoponfhir3/smart/token
 export FHIR_URL=https://apps.hdap.gatech.edu/omoponfhir3/fhir
